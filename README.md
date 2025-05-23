@@ -132,19 +132,35 @@ int main() {
     jlizard::ByteArray key(32, 0x42);  // 256-bit key
     jlizard::ByteArray iv(16, 0x24);   // 128-bit IV
     
-    // Single call encryption (no manual buffer allocation or length tracking)
+    // Encrypt with std::expected error handling
     auto encrypted = handler.encrypt(plaintext, key, iv, true);
     if (!encrypted) {
         std::cerr << "Encryption failed: " << encrypted.error().what() << std::endl;
         return 1;
     }
     
-    // Single call decryption (no manual buffer allocation or length tracking)
+    // Decrypt with std::expected error handling
     auto decrypted = handler.decrypt(encrypted.value(), key, iv, true);
     if (!decrypted) {
         std::cerr << "Decryption failed: " << decrypted.error().what() << std::endl;
         return 1;
     }
+    
+    // Use the decrypted value safely
+    std::cout << "Decrypted: ";
+    for (char c : decrypted.value()) {
+        std::cout << c;
+    }
+    std::cout << std::endl;
+    
+    // Proper cleanup of sensitive data
+    // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
+    // OpenSSL_cleanse(buffer.data(), buffer.size())
+    plaintext.secure_wipe();
+    key.secure_wipe();
+    iv.secure_wipe();
+    encrypted.value().secure_wipe();
+    decrypted.value().secure_wipe();
     
     return 0;
 }
@@ -165,7 +181,7 @@ int main() {
     // ByteArray handles data buffer management
     jlizard::ByteArray message = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
     
-    // Single function call handles context initialization, updates, and finalization
+    // Calculate digest with std::expected error handling
     auto digest = handler.calculate_digest(message);
     if (!digest) {
         std::cerr << "Digest calculation failed: " << digest.error().what() << std::endl;
@@ -178,6 +194,26 @@ int main() {
         std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
     }
     std::cout << std::endl;
+    
+    // You can also calculate a truncated digest
+    auto truncated = handler.calculate_digest_truncated(message, 128); // 128 bits
+    if (!truncated) {
+        std::cerr << "Truncated digest failed: " << truncated.error().what() << std::endl;
+        return 1;
+    }
+    
+    std::cout << "Truncated SHA-256 (128 bits): ";
+    for (auto byte : truncated.value()) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
+    }
+    std::cout << std::endl;
+    
+    // Proper cleanup of sensitive data
+    // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
+    // OpenSSL_cleanse(buffer.data(), buffer.size())
+    message.secure_wipe();
+    digest.value().secure_wipe();
+    truncated.value().secure_wipe();
     
     return 0;
 }
@@ -199,15 +235,22 @@ int main() {
     jlizard::ByteArray message = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
     jlizard::ByteArray key = {'S', 'e', 'c', 'r', 'e', 't', 'K', 'e', 'y'};
     
-    // Single call replaces multiple HMAC_Init/Update/Final operations
+    // Calculate HMAC (returns ByteArray directly, not std::expected)
     jlizard::ByteArray hmac = handler.calculate_hmac(message, key);
     
-    // Result already in a properly sized buffer
+    // Display the result
     std::cout << "HMAC-SHA256: ";
     for (auto byte : hmac) {
         std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
     }
     std::cout << std::endl;
+    
+    // Proper cleanup of sensitive data
+    // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
+    // OpenSSL_cleanse(buffer.data(), buffer.size())
+    message.secure_wipe();
+    key.secure_wipe();
+    hmac.secure_wipe();
     
     return 0;
 }
@@ -229,19 +272,26 @@ int main() {
     jlizard::ByteArray message = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
     jlizard::ByteArray key(32, 0x42);  // 256-bit key
     
-    // Single call abstracts away all the CBC-MAC implementation details
+    // Calculate CBC-MAC with std::expected error handling
     auto mac = handler.calculate_cbc_mac(message, key);
     if (!mac) {
         std::cerr << "CBC-MAC calculation failed: " << mac.error().what() << std::endl;
         return 1;
     }
     
-    // Result is in a properly sized buffer
+    // Display the result
     std::cout << "CBC-MAC: ";
     for (auto byte : mac.value()) {
         std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
     }
     std::cout << std::endl;
+    
+    // Proper cleanup of sensitive data
+    // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
+    // OpenSSL_cleanse(buffer.data(), buffer.size())
+    message.secure_wipe();
+    key.secure_wipe();
+    mac.value().secure_wipe();
     
     return 0;
 }
@@ -264,19 +314,27 @@ int main() {
     jlizard::ByteArray key(32, 0x42);  // 256-bit key
     jlizard::ByteArray iv(12, 0x24);   // 96-bit IV (recommended for GCM)
     
-    // Single call abstracts the complex GCM mode handling
+    // Calculate GMAC with std::expected error handling
     auto gmac = handler.calculate_gmac(aad, key, iv);
     if (!gmac) {
         std::cerr << "GMAC calculation failed: " << gmac.error().what() << std::endl;
         return 1;
     }
     
-    // Result already in a properly sized buffer
+    // Display the result
     std::cout << "GMAC: ";
     for (auto byte : gmac.value()) {
         std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
     }
     std::cout << std::endl;
+    
+    // Proper cleanup of sensitive data
+    // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
+    // OpenSSL_cleanse(buffer.data(), buffer.size())
+    aad.secure_wipe();
+    key.secure_wipe();
+    iv.secure_wipe();
+    gmac.value().secure_wipe();
     
     return 0;
 }
