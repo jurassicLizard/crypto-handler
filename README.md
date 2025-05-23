@@ -2,21 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> ⚠️ **IMPORTANT NOTICE**: This code is provided for educational purposes only.
-> Cryptographic implementations require precise implementation details
-> and must undergo thorough security audits before deployment in production environments.
-> This library has not been formally audited. Use at your own risk.
-
-> ⚠️ **SECURITY ADVISORY**: CBC mode encryption requires additional authentication mechanisms.
-> Without proper authentication, CBC is vulnerable to padding oracle attacks and other cryptographic threats.
-> For most applications, authenticated encryption modes such as GCM are strongly recommended.
-
-> ⚠️ **MEMORY SECURITY NOTE**: This library does not automatically purge sensitive data from memory.
-> While ByteArray provides a secure_erase method, we recommend using OpenSSL_cleanse()
-> which has undergone extensive security review and provides more reliable and deterministic memory clearing.
-
 <!-- TOC -->
 * [CryptoHandler](#cryptohandler)
+  * [⚠️ **SECURITY ADVISORIES**](#-security-advisories)
   * [Security Best Practices](#security-best-practices)
   * [Status: Work In Progress](#status-work-in-progress)
   * [Key Features](#key-features)
@@ -34,6 +22,22 @@
   * [Contributing](#contributing)
   * [License](#license)
 <!-- TOC -->
+
+## ⚠️ **SECURITY ADVISORIES**
+
+> ⚠️ **IMPORTANT NOTICE**: This code is provided for educational purposes only.
+> Cryptographic implementations require precise implementation details
+> and must undergo thorough security audits before deployment in production environments.
+> This library has not been formally audited. Use at your own risk.
+
+> ⚠️ **SECURITY ADVISORY**: CBC mode encryption requires additional authentication mechanisms.
+> Without proper authentication, CBC is vulnerable to padding oracle attacks and other cryptographic threats.
+> For most applications, authenticated encryption modes such as GCM are strongly recommended.
+
+> ⚠️ **MEMORY SECURITY NOTE**: This library does not automatically purge sensitive data from memory.
+> While ByteArray provides a secure_erase method, we recommend using OpenSSL_cleanse()
+> which has undergone extensive security review and provides more reliable and deterministic memory clearing.
+
 
 ## Security Best Practices
 
