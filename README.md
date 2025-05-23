@@ -85,13 +85,33 @@ CryptoHandler is a high-level C++23 library that provides a clean interface to O
 ## Requirements
 
 - C++23 compatible compiler
-- OpenSSL (1.1.1 or later recommended) (older openSSL implementations are vulnerable and insecure use a more recent version)
+- OpenSSL (1.1.1 minimum - more recent versions recommended) (older openSSL implementations are vulnerable and insecure use a more recent version)
 - CMake build system
 
 ## Installation
+### Option 1: Build from source
+``` bash
+git clone https://github.com/jurassiclizard/crypto-handler.git
+cd crypto-handler
+mkdir build && cd build
+cmake ..
+make
 ```
-bash git clone [https://github.com/username/crypto-handler.git](https://github.com/username/crypto-handler.git) cd crypto-handler mkdir build && cd build cmake .. make
-``` 
+### Option 2: Include via CMake FetchContent
+Add CryptoHandler to your CMake project using FetchContent:
+``` cmake
+include(FetchContent)
+
+FetchContent_Declare(
+  crypto-handler
+  GIT_REPOSITORY https://github.com/jurassiclizard/crypto-handler.git
+  GIT_TAG main  # or specify a tag/commit hash
+)
+FetchContent_MakeAvailable(crypto-handler)
+
+# Link against the library in your target
+target_link_libraries(your_target PRIVATE jlizard::crypto-handler)
+```
 
 ## Usage Examples
 
