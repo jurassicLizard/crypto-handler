@@ -16,7 +16,7 @@ target_include_directories(${CH_PROJECT_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/include/public"
         PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include/private")
-target_link_libraries(${CH_PROJECT_NAME} jlizard::byte-ao)
+target_link_libraries(${CH_PROJECT_NAME} ${OPENSSL_LIBRARIES} jlizard::byte-ao)
 
 add_library(jlizard::crypto-handler ALIAS ${CH_PROJECT_NAME})
 

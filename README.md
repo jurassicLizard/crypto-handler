@@ -11,6 +11,8 @@
   * [Abstracted Cryptographic Operations](#abstracted-cryptographic-operations)
   * [Requirements](#requirements)
   * [Installation](#installation)
+    * [Option 1: Build from source](#option-1-build-from-source)
+    * [Option 2: Include via CMake FetchContent](#option-2-include-via-cmake-fetchcontent)
   * [Usage Examples](#usage-examples)
     * [Symmetric Encryption/Decryption](#symmetric-encryptiondecryption)
     * [Calculating Message Digests](#calculating-message-digests)

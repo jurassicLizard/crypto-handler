@@ -1,27 +1,26 @@
-/*
- * MIT License
- * 
- * Copyright (c) 2025 Salem B.
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- * 
- */
+//
+// MIT License
+//
+// Copyright (c) 2025 Salem B.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
 
 #include  "jlizard/byte_array.h"
 
@@ -32,6 +31,10 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <openssl/err.h>
+#include <openssl/provider.h>
+
+#include "jlizard/openssl_error.h"
 
 using namespace jlizard;
 
@@ -92,7 +95,7 @@ CryptoHandler::~CryptoHandler() {
 
 void CryptoHandler::openssl_handle_errors() {
         ERR_print_errors_fp(stderr);
-        throw std::runtime_error("OPENSSL error");
+        throw OpenSSLException();
 }
 
 int CryptoHandler::encrypt_(const unsigned char *plaintext, const int plaintext_len, const unsigned char *key, const unsigned char *iv,
@@ -153,7 +156,8 @@ int CryptoHandler::encrypt_(const unsigned char *plaintext, const int plaintext_
 std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(const ByteArray& plaintext_bytes, const ByteArray& key, const ByteArray& iv, const bool bAllowPadding)
 {
     // Pre-allocate ciphertext buffer with sufficient space
-    ByteArray ciphertext_bytes(plaintext_bytes.size(),0x00);
+    int block_size = EVP_CIPHER_block_size(m_cipher);
+    ByteArray ciphertext_bytes(plaintext_bytes.size() + block_size,0x00);
 
     int encrypted_length = encrypt_(
     const_cast<ByteArray&>(plaintext_bytes).data(),
@@ -181,7 +185,8 @@ std::expected<ByteArray,CryptoHandlerError> CryptoHandler::decrypt(const ByteArr
 {
 
     // Pre-allocate plaintext buffer with sufficient space
-    ByteArray plaintext_bytes(ciphertext_bytes.size(),0x00);
+    int block_size = EVP_CIPHER_block_size(m_cipher);
+    ByteArray plaintext_bytes(ciphertext_bytes.size() + block_size,0x00);
 
     // The const_cast is unfortunate but necessary due to OpenSSL's API
     int decrypted_length = decrypt_(
