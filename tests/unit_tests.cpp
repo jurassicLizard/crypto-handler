@@ -30,8 +30,6 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../include/private/jlizard/openssl_error.h"
-
 using namespace jlizard;
 
 
@@ -104,7 +102,7 @@ void test_aes_cbc_wrong_key() {
     {
         decrypted = handler.decrypt(encrypted.value(), wrong_key, iv, true);
 
-    } catch (OpenSSLException&)
+    } catch (std::exception&)
     {
         exception_thrown = true;
     }
@@ -270,7 +268,7 @@ void test_mode_mismatch() {
         ByteArray message = {'t', 'e', 's', 't'};
 
         // This should throw - using cipher handler for digest
-        handler.calculate_digest(message);
+        auto h = handler.calculate_digest(message);
 
         message.secure_wipe();
     }
@@ -307,16 +305,34 @@ void test_hmac_rfc4231_tc1() {
 
 // Test encrypt/decrypt with AES-GCM
 void test_aes_gcm() {
+    //FIXME gcm encryption is wrong
     CryptoHandler handler(EVP_aes_256_gcm());
 
     ByteArray plaintext = {'S', 'e', 'c', 'r', 'e', 't', ' ', 'M', 'e', 's', 's', 'a', 'g', 'e'};
     ByteArray key(32, 0x42);
     ByteArray iv(12, 0x24); // 96-bit IV for GCM
 
-    auto encrypted = handler.encrypt(plaintext, key, iv, true);
+    // AAD using a realistic example of protocol metadata
+    std::optional<const ByteArray> aad = ByteArray{
+        0x01, 0x02, // Protocol version (1.2)
+        0x00, 0x00, 0x00, 0x01, // Message ID
+        0x00, 0x05, // Sender ID length
+        'A', 'l', 'i', 'c', 'e', // Sender ID "Alice"
+        0x00, 0x03, // Content type length
+        'M', 'S', 'G' // Content type "MSG"
+    };
+
+
+    std::optional<ByteArray> tag_out = ByteArray(16,0x00);
+    auto encrypted = handler.encrypt(plaintext, key, iv,tag_out,aad);
     assert(encrypted.has_value());
 
-    auto decrypted = handler.decrypt(encrypted.value(), key, iv, true);
+    if (!tag_out.has_value())
+    {
+        throw std::runtime_error("Expected to get a tag from gcm encryption but got none");
+    }
+    std::optional<const ByteArray> tag = tag_out;
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv,tag,aad);
     assert(decrypted.has_value());
     assert(plaintext == decrypted.value());
 
@@ -328,6 +344,109 @@ void test_aes_gcm() {
     decrypted.value().secure_wipe();
 
     std::cout << "AES-GCM encryption/decryption test passed" << std::endl;
+}
+
+
+void test_aes_gcm_missing_tag() {
+    CryptoHandler handler(EVP_aes_256_gcm());
+
+    ByteArray plaintext = {'S', 'e', 'c', 'r', 'e', 't', ' ', 'M', 'e', 's', 's', 'a', 'g', 'e'};
+    ByteArray key(32, 0x42);
+    ByteArray iv(12, 0x24); // 96-bit IV for GCM
+
+    // Encrypt with tag
+    std::optional<ByteArray> tag_out = ByteArray(16, 0x00);
+    auto no_aad = std::optional<const ByteArray>(std::nullopt);
+    auto encrypted = handler.encrypt(plaintext, key, iv, tag_out, no_aad);
+    assert(encrypted.has_value());
+    assert(tag_out.has_value());
+
+    // Try to decrypt without providing the tag
+    std::optional<const ByteArray> no_tag = std::nullopt;
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv, no_tag, no_aad);
+
+    // Should fail with an error
+    assert(!decrypted.has_value());
+    // Verify the error message mentions the tag requirement
+    assert(decrypted.error().err_message.find("Tag is required") != std::string::npos);
+
+    std::cout << "AES-GCM missing tag test passed" << std::endl;
+}
+
+void test_aes_gcm_small_tag() {
+    CryptoHandler handler(EVP_aes_256_gcm());
+
+    ByteArray plaintext = {'S', 'e', 'c', 'r', 'e', 't', ' ', 'M', 'e', 's', 's', 'a', 'g', 'e'};
+    ByteArray key(32, 0x42);
+    ByteArray iv(12, 0x24); // 96-bit IV for GCM
+
+    // Encrypt with proper tag size
+    std::optional<ByteArray> tag_out = ByteArray(16, 0x00);
+    auto no_aad = std::optional<const ByteArray>(std::nullopt);
+    auto encrypted = handler.encrypt(plaintext, key, iv, tag_out, no_aad);
+    assert(encrypted.has_value());
+    assert(tag_out.has_value());
+
+    // Create a small tag (only 8 bytes) by copying part of the original tag
+    ByteArray small_tag(tag_out->begin(), tag_out->begin() + 8);
+    std::optional<const ByteArray> small_tag_opt = small_tag;
+
+    // Try to decrypt with the small tag
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv, small_tag_opt, no_aad);
+
+    // Should fail with an error about tag size
+    assert(!decrypted.has_value());
+    assert(decrypted.error().err_message.find("Tag too small") != std::string::npos);
+
+    std::cout << "AES-GCM small tag test passed" << std::endl;
+}
+
+void test_aes_gcm_empty_tag_buffer() {
+    CryptoHandler handler(EVP_aes_256_gcm());
+
+    ByteArray plaintext = {'S', 'e', 'c', 'r', 'e', 't', ' ', 'M', 'e', 's', 's', 'a', 'g', 'e'};
+    ByteArray key(32, 0x42);
+    ByteArray iv(12, 0x24); // 96-bit IV for GCM
+
+    // Try to encrypt with an empty tag buffer
+    std::optional<ByteArray> empty_tag = ByteArray();
+    auto no_aad = std::optional<const ByteArray>(std::nullopt);
+    auto encrypted = handler.encrypt(plaintext, key, iv, empty_tag, no_aad);
+
+    // Should fail with an error about tag size
+    assert(!encrypted.has_value());
+    assert(encrypted.error().err_message.find("Tag buffer too small") != std::string::npos);
+
+    std::cout << "AES-GCM empty tag buffer test passed" << std::endl;
+}
+
+void test_aes_gcm_large_tag_buffer() {
+    CryptoHandler handler(EVP_aes_256_gcm());
+
+    ByteArray plaintext = {'S', 'e', 'c', 'r', 'e', 't', ' ', 'M', 'e', 's', 's', 'a', 'g', 'e'};
+    ByteArray key(32, 0x42);
+    ByteArray iv(12, 0x24); // 96-bit IV for GCM
+
+    // Encrypt with a larger than needed tag buffer (24 bytes)
+    std::optional<ByteArray> large_tag = ByteArray(24, 0x00);
+    auto no_aad = std::optional<const ByteArray>(std::nullopt);
+    auto encrypted = handler.encrypt(plaintext, key, iv, large_tag, no_aad);
+
+    // Should work fine, with the tag being 16 bytes
+    assert(encrypted.has_value());
+    assert(large_tag.has_value());
+    // The tag buffer should still be 24 bytes, but only the first 16 are meaningful
+    assert(large_tag->size() == 24);
+
+    // Now try to decrypt with this tag
+    std::optional<const ByteArray> tag_for_decrypt = *large_tag;
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv, tag_for_decrypt, no_aad);
+
+    // Should work, but might require fixing the implementation to handle larger tag buffers
+    assert(decrypted.has_value());
+    assert(plaintext == decrypted.value());
+
+    std::cout << "AES-GCM large tag buffer test passed" << std::endl;
 }
 
 int main() {
