@@ -415,7 +415,7 @@ void test_aes_gcm_empty_tag_buffer() {
 
     // Should fail with an error about tag size
     assert(!encrypted.has_value());
-    assert(encrypted.error().err_message.find("Tag buffer too small") != std::string::npos);
+    assert(encrypted.error().err_message.find("between 12 and 16 bytes") != std::string::npos);
 
     std::cout << "AES-GCM empty tag buffer test passed" << std::endl;
 }
@@ -432,19 +432,9 @@ void test_aes_gcm_large_tag_buffer() {
     auto no_aad = std::optional<const ByteArray>(std::nullopt);
     auto encrypted = handler.encrypt(plaintext, key, iv, large_tag, no_aad);
 
-    // Should work fine, with the tag being 16 bytes
-    assert(encrypted.has_value());
+    // Should fail
+    assert(!encrypted.has_value() && encrypted.error().err_message.find("between 12 and 16 bytes"));
     assert(large_tag.has_value());
-    // The tag buffer should still be 24 bytes, but only the first 16 are meaningful
-    assert(large_tag->size() == 24);
-
-    // Now try to decrypt with this tag
-    std::optional<const ByteArray> tag_for_decrypt = *large_tag;
-    auto decrypted = handler.decrypt(encrypted.value(), key, iv, tag_for_decrypt, no_aad);
-
-    // Should work, but might require fixing the implementation to handle larger tag buffers
-    assert(decrypted.has_value());
-    assert(plaintext == decrypted.value());
 
     std::cout << "AES-GCM large tag buffer test passed" << std::endl;
 }
@@ -467,6 +457,12 @@ int main() {
     test_wrong_cipher_mode();
     test_mode_mismatch();
     test_aes_gcm();
+    test_aes_gcm_missing_tag();
+    test_aes_gcm_small_tag();
+    test_aes_gcm_empty_tag_buffer();
+    test_aes_gcm_large_tag_buffer();
+
+
 
     // Clean up OpenSSL
     EVP_cleanup();

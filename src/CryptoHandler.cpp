@@ -186,7 +186,7 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(
     const auto tag_size = tag_out.value_or(ByteArray()).size();
     // In GCM mode, verify tag_out is properly sized
     if (EVP_CIPHER_mode(m_cipher) == EVP_CIPH_GCM_MODE && (tag_size < 12 || tag_size > 16)) {
-        return std::unexpected(CryptoHandlerError::with_msg("Tag buffer too small for GCM mode"));
+        return std::unexpected(CryptoHandlerError::with_msg("Expected Tag buffer to be between 12 and 16 bytes for GCM mode"));
     }
 
 
@@ -256,7 +256,7 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(
         if (!tag.has_value()) {
             return std::unexpected(CryptoHandlerError::with_msg("Tag is required for GCM mode"));
         }
-        if (tag->size() < 16) {
+        if (tag->size() < 12) {
             return std::unexpected(CryptoHandlerError::with_msg("Tag too small for GCM mode"));
         }
     }
