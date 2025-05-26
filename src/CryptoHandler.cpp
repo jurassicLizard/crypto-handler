@@ -412,39 +412,6 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::calculate_digest(con
     return digest_output;
 }
 
-void CryptoHandler::calculate_digest(const std::vector<unsigned char>& message,
-                         std::vector<unsigned char>& digest_output) {
-
-    // Check if the digest_type is properly initialized
-    expect_digest_mode_handler();
-
-    // Reset context for reuse
-    if(1 != EVP_MD_CTX_reset(m_digest_ctx.get()))
-        openssl_handle_errors();
-
-    // Initialize the digest operation
-    if (1 != EVP_DigestInit_ex(m_digest_ctx.get(), m_digest, nullptr)) {
-        openssl_handle_errors();
-    }
-
-    // Update with the message
-    if (1 != EVP_DigestUpdate(m_digest_ctx.get(), message.data(), message.size())) {
-        openssl_handle_errors();
-    }
-
-    // Resize the output buffer to hold the digest
-    unsigned int digest_len = EVP_MD_size(m_digest);
-    digest_output.resize(digest_len);
-
-    // Finalize the digest calculation
-    if (1 != EVP_DigestFinal_ex(m_digest_ctx.get(), digest_output.data(), &digest_len)) {
-        openssl_handle_errors();
-    }
-
-    // No need for explicit cleanup - unique_ptr will handle it
-
-}
-
 std::expected<ByteArray, CryptoHandlerError> CryptoHandler::calculate_digest_truncated(
     const ByteArray& message, const size_t show_bits)
 {

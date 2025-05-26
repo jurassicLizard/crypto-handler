@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0-alpha.1]
+## [Unreleased]
+
+## Changed
+- Removed redundant calculate_digest signature. Kept only signature in active use, old function was not used
+  and doesnot adhere to error propagation methodology applied for other functions
+- Updated Readme.md with reference to ByteArray library
+
+## [0.1.0-alpha.1] - 2025-05-26
 
 ### Added
 - Initial implementation of CryptoHandler class with support for:

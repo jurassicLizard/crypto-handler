@@ -254,8 +254,6 @@ public:
         bool bAllowPadding = true);
 
     std::expected<ByteArray, CryptoHandlerError> calculate_digest(const ByteArray& message);
-    void calculate_digest(const std::vector<unsigned char>& message,
-                         std::vector<unsigned char>& digest_output);
     std::expected<ByteArray, CryptoHandlerError> calculate_digest_truncated(
         const ByteArray& message, const size_t show_bits = 8);
     std::expected<ByteArray, CryptoHandlerError> calculate_cbc_mac(const ByteArray& plaintext_bytes,

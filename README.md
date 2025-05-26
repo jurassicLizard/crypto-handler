@@ -79,7 +79,7 @@ CryptoHandler is a high-level C++23 library that provides a clean interface to O
 - **Modern C++ Abstractions**: Wraps OpenSSL's C-style buffer APIs with type-safe C++23 interfaces
 - **Memory Safety**: Automatic resource management using RAII principles and smart pointers
 - **Error Handling**: Uses `std::expected` for robust error reporting without exceptions
-- **ByteArray Utility**: Simplified handling of binary data buffers that integrates seamlessly with OpenSSL
+- **ByteArray Utility**: Integrates with my custom ByteArray library ([ByteArray Ops (byte-ao)](https://github.com/jurassiclizard/byte-ao)), enabling high-level byte array operations such as concatenations, secure memory wiping, and efficient binary data handling.
 - **Reduced Boilerplate**: Eliminates repetitive error handling and buffer management code
 
 ## Abstracted Cryptographic Operations
@@ -113,7 +113,7 @@ include(FetchContent)
 FetchContent_Declare(
   crypto-handler
   GIT_REPOSITORY https://github.com/jurassiclizard/crypto-handler.git
-  GIT_TAG main  # or specify a tag/commit hash
+  GIT_TAG master  # or specify a tag/commit hash
 )
 FetchContent_MakeAvailable(crypto-handler)
 
