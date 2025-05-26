@@ -161,35 +161,32 @@ The test suite includes:
 - MAC operations (HMAC, CBC-MAC, GMAC)
 - Memory wiping functionality
 
-
-## Usage Examples
-
-### Tips on Padding Options
+## Tips on Padding Options
 
 1. For GCM mode:
    The padding parameter is ignored since GCM operates on full blocks internally.
    Both of these calls are equivalent for GCM:
-   
+
     ```cpp
        handler.encrypt(plaintext, key,iv) // Padding enabled(but ignored)
        handler.encrypt(plaintext, key, iv, true); // Padding enabled (but ignored)
        handler.encrypt(plaintext, key, iv, false); // Padding disabled (but ignored)
     ```
 2. For CBC mode:
-  - WITH padding (recommended for most use cases):
-    ```cpp
-    // Alternative 1 (padding enabled implicitly)
-    handler.encrypt(plaintext, key,iv);
-    // Alternative 2 (explicit enabling for more readability)
-    handler.encrypt(plaintext, key, iv, true);
-    ```
-    This handles messages of any length automatically.
+- WITH padding (recommended for most use cases):
+  ```cpp
+  // Alternative 1 (padding enabled implicitly)
+  handler.encrypt(plaintext, key,iv);
+  // Alternative 2 (explicit enabling for more readability)
+  handler.encrypt(plaintext, key, iv, true);
+  ```
+  This handles messages of any length automatically.
 
-  - WITHOUT padding (only for special cases):
-    `handler.encrypt(plaintext, key, iv, false);`
+- WITHOUT padding (only for special cases):
+  `handler.encrypt(plaintext, key, iv, false);`
 
-    > NOTE : Only disable padding when your data is guaranteed to be a multiple of the block size
-    > (16 bytes for AES). Otherwise, encryption will fail.
+  > NOTE : Only disable padding when your data is guaranteed to be a multiple of the block size
+  > (16 bytes for AES). Otherwise, encryption will fail.
 
 
 Choose the appropriate mode based on your security requirements:
@@ -199,6 +196,8 @@ Choose the appropriate mode based on your security requirements:
 - OFB: same as CTR should be avoided in favor of CBC or GCM
 
 
+## Usage Examples
+
 ### Symmetric Encryption/Decryption (General)
 
 ```cpp
@@ -206,9 +205,8 @@ Choose the appropriate mode based on your security requirements:
 #include "jlizard/byte_array.h"
 #include <openssl/evp.h>
 #include <iostream>
+#include <iomanip>
 
-
-// using namespace jlizard;
 
 int main() {
     // Create a CryptoHandler for AES-256-CBC
@@ -244,10 +242,7 @@ int main() {
     
     // Use the decrypted value safely
     std::cout << "Decrypted: ";
-    for (char c : decrypted.value()) {
-        std::cout << c;
-    }
-    std::cout << std::endl;
+    std::cout << decrypted.value().as_hex_string() << std::endl;
     
     // Proper cleanup of sensitive data
     // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
@@ -271,6 +266,7 @@ GCM (Galois/Counter Mode) is an authenticated encryption mode that provides both
 #include "jlizard/byte_array.h"
 #include <openssl/evp.h>
 #include <iostream>
+#include <iomanip>
 
 int main() {
     // Create a CryptoHandler for AES-256-GCM
@@ -297,7 +293,10 @@ int main() {
     }
     
     std::cout << "Encryption successful, tag size: " << tag.size() << " bytes\n";
-    
+    std::cout << "Tag: ";
+    std::cout << tag.as_hex_string() << std::endl;
+
+      
     // Decrypt with GCM, providing tag and AAD for authentication
     auto decrypted = handler.decrypt(encrypted.value(), key, iv, tag, aad, false);
     if (!decrypted) {
@@ -306,10 +305,7 @@ int main() {
     }
     
     std::cout << "Decrypted message: ";
-    for (char c : decrypted.value()) {
-        std::cout << c;
-    }
-    std::cout << std::endl;
+    std::cout << decrypted.value().as_hex_string() << std::endl;
     
     // Proper cleanup of sensitive data
     plaintext.secure_wipe();
@@ -350,10 +346,7 @@ int main() {
     
     // Result is already in a managed buffer
     std::cout << "SHA-256: ";
-    for (auto byte : digest.value()) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-    }
-    std::cout << std::endl;
+    std::cout << digest.value().as_hex_string() << std::endl;
     
     // You can also calculate a truncated digest
     auto truncated = handler.calculate_digest_truncated(message, 128); // 128 bits
@@ -363,10 +356,7 @@ int main() {
     }
     
     std::cout << "Truncated SHA-256 (128 bits): ";
-    for (auto byte : truncated.value()) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-    }
-    std::cout << std::endl;
+    std::cout << truncated.value().as_hex_string() << std::endl;
     
     // Proper cleanup of sensitive data
     // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
@@ -400,10 +390,8 @@ int main() {
     
     // Display the result
     std::cout << "HMAC-SHA256: ";
-    for (auto byte : hmac) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-    }
-    std::cout << std::endl;
+    std::cout << hmac.value().as_hex_string() << std::endl;
+      
     
     // Proper cleanup of sensitive data
     // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
@@ -441,10 +429,7 @@ int main() {
     
     // Display the result
     std::cout << "CBC-MAC: ";
-    for (auto byte : mac.value()) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-    }
-    std::cout << std::endl;
+    std::cout << mac.value().as_hex_string() << std::endl;
     
     // Proper cleanup of sensitive data
     // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
@@ -483,10 +468,7 @@ int main() {
     
     // Display the result
     std::cout << "GMAC: ";
-    for (auto byte : gmac.value()) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte);
-    }
-    std::cout << std::endl;
+    std::cout << gmac.value().as_hex_string() << std::endl;
     
     // Proper cleanup of sensitive data
     // Note: For maximum security, consider using OpenSSL_cleanse directly on the underlying buffer:
