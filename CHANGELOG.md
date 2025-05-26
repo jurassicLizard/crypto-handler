@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and doesn't adhere to error propagation methodology applied for other functions
 - Updated Readme.md with reference to ByteArray library
 - Reorganize the structure of readme and improve examples
+- Adjusted the test coverage section of the readme.md
 
 ### Fixed
 - Fixed some bugs in the provided examples

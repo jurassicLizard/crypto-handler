@@ -508,7 +508,7 @@ The test suite includes:
   - Incompatible algorithm parameters
 - Message digest calculations
 - MAC operations (HMAC, CBC-MAC, GMAC)
-- Memory wiping functionality
+- etc...
 
 
 ## Project Information
