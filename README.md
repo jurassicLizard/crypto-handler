@@ -93,7 +93,7 @@ CryptoHandler is a high-level C++23 library that provides a clean interface to O
 ## Requirements
 
 - C++23 compatible compiler
-- OpenSSL (1.1.1 minimum - more recent versions recommended) (older openSSL implementations are vulnerable and insecure use a more recent version)
+- OpenSSL (1.1.1 minimum - more recent versions recommended) (older openSSL implementations are vulnerable and insecure and are not recommended for use)
 - CMake build system
 
 ## Installation
