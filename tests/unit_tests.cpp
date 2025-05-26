@@ -305,7 +305,6 @@ void test_hmac_rfc4231_tc1() {
 
 // Test encrypt/decrypt with AES-GCM
 void test_aes_gcm() {
-    //FIXME gcm encryption is wrong
     CryptoHandler handler(EVP_aes_256_gcm());
 
     ByteArray plaintext = {'S', 'e', 'c', 'r', 'e', 't', ' ', 'M', 'e', 's', 's', 'a', 'g', 'e'};

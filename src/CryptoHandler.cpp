@@ -38,9 +38,7 @@
 using namespace jlizard;
 
 CryptoHandler::CryptoHandler(const EVP_CIPHER *cipher) : m_cipher(cipher){
-    //FIXME remove retehrows and check the decltype openssl custom deleters which looks awesome
-    //FIXME implement decrypt
-    //FIXME add IV verification to 12 bytes for GCM ciphers
+
         printf("running in cipher mode \n");
         printf("using : %s\n",EVP_CIPHER_get0_name(cipher));
 
@@ -439,7 +437,6 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::calculate_cbc_mac(co
     ByteArray mac_bytes(block_size_bytes,0x00);
 
     const ByteArray iv(block_size_bytes,0);
-    //FIXME use std::optional for aad and tag
     auto enc_res = encrypt(plaintext_bytes,key,iv,false).value(); //no cipher padding because we need the last cipher block as is
 
     if (enc_res.size() >= static_cast<size_t>(block_size_bytes))
