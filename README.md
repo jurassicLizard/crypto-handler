@@ -2,6 +2,13 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+## Overview
+
+CryptoHandler is a modern C++23 library that simplifies cryptographic operations with a user-friendly interface. By abstracting away the complexities of OpenSSL's C-style API, it enables developers to quickly perform secure, high-level cryptographic operations with minimal boilerplate.
+
+Designed with performance, safety, and code clarity in mind, this library is ideal for applications requiring robust cryptographic functionality without needing in-depth expertise in OpenSSL internals.
+
+
 <!-- TOC -->
 * [CryptoHandler](#cryptohandler)
   * [Overview](#overview)
@@ -33,11 +40,6 @@
     * [License](#license)
 <!-- TOC -->
 
-## Overview
-
-CryptoHandler is a modern C++23 library that simplifies cryptographic operations with a user-friendly interface. By abstracting away the complexities of OpenSSL's C-style API, it enables developers to quickly perform secure, high-level cryptographic operations with minimal boilerplate.
-
-Designed with performance, safety, and code clarity in mind, this library is ideal for applications requiring robust cryptographic functionality without needing in-depth expertise in OpenSSL internals.
 
 ## Key Features
 
