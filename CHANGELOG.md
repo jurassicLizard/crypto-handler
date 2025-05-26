@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed redundant calculate_digest signature. Kept only signature in active use, old function was not used
   and doesnot adhere to error propagation methodology applied for other functions
 - Updated Readme.md with reference to ByteArray library
-- Reorganize structure of readme
+- Reorganize structure of readme and improve examples
 
 ## [0.1.0-alpha.1] - 2025-05-26
 

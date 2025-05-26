@@ -4,9 +4,9 @@
 
 <!-- TOC -->
 * [CryptoHandler](#cryptohandler)
+  * [Overview](#overview)
   * [⚠️ **SECURITY ADVISORIES**](#-security-advisories)
   * [Security Best Practices](#security-best-practices)
-  * [Status: Work In Progress](#status-work-in-progress)
   * [Key Features](#key-features)
   * [Abstracted Cryptographic Operations](#abstracted-cryptographic-operations)
   * [Requirements](#requirements)
@@ -17,8 +17,8 @@
     * [Prerequisites for Testing](#prerequisites-for-testing)
     * [Building and Running Tests](#building-and-running-tests)
     * [Test Coverage](#test-coverage)
+  * [Tips on Padding Options](#tips-on-padding-options)
   * [Usage Examples](#usage-examples)
-    * [Tips on Padding Options](#tips-on-padding-options)
     * [Symmetric Encryption/Decryption (General)](#symmetric-encryptiondecryption-general)
     * [Symmetric Encryption/Decryption (GCM)](#symmetric-encryptiondecryption-gcm)
     * [Calculating Message Digests](#calculating-message-digests)
@@ -30,6 +30,11 @@
   * [Changelog](#changelog)
   * [License](#license)
 <!-- TOC -->
+
+## Overview
+
+CryptoHandler is a high-level C++23 library that provides a clean interface to OpenSSL cryptographic operations. It simplifies usage of common cryptographic primitives by abstracting away the complexities of OpenSSL's C-style API.
+
 
 ## ⚠️ **SECURITY ADVISORIES**
 
@@ -45,6 +50,7 @@
 > ⚠️ **MEMORY SECURITY NOTE**: This library does not automatically purge sensitive data from memory.
 > While ByteArray provides a secure_erase method, we recommend using OpenSSL_cleanse()
 > which has undergone extensive security review and provides more reliable and deterministic memory clearing.
+
 
 
 ## Security Best Practices
@@ -69,10 +75,6 @@ When using this library, please consider the following security recommendations:
 - **Verification**:
     - Test cryptographic operations with known test vectors
     - Verify authenticated encryption with tampered data to confirm detection
-
-## Status: Work In Progress
-
-CryptoHandler is a high-level C++23 library that provides a clean interface to OpenSSL cryptographic operations. It simplifies usage of common cryptographic primitives by abstracting away the complexities of OpenSSL's C-style API.
 
 ## Key Features
 
@@ -134,8 +136,9 @@ CTest from CMake is used for testing therefore no special configuration is requi
 
 ```bash
 # Clone the repository
-git clone [https://github.com/jurassiclizard/crypto-handler.git](https://github.com/jurassiclizard/crypto-handler.git) cd crypto-handler
-# Create a build directory
+git clone https://github.com/jurassiclizard/crypto-handler.git 
+cd crypto-handler
+# Create a build directory and build
 mkdir build && cd build
 # Configure with testing enabled
 cmake .. -DBUILD_TESTING=ON
@@ -165,7 +168,7 @@ The test suite includes:
 
 1. For GCM mode:
    The padding parameter is ignored since GCM operates on full blocks internally.
-   Both of these calls are equivalent for GCM:
+   all of these calls are equivalent for GCM:
 
     ```cpp
        handler.encrypt(plaintext, key,iv) // Padding enabled(but ignored)
@@ -174,6 +177,7 @@ The test suite includes:
     ```
 2. For CBC mode:
 - WITH padding (recommended for most use cases):
+  Both of the these calls are equivalent for CBC
   ```cpp
   // Alternative 1 (padding enabled implicitly)
   handler.encrypt(plaintext, key,iv);
