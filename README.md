@@ -5,10 +5,9 @@
 <!-- TOC -->
 * [CryptoHandler](#cryptohandler)
   * [Overview](#overview)
+  * [Key Features](#key-features)
   * [⚠️ **SECURITY ADVISORIES**](#-security-advisories)
   * [Security Best Practices](#security-best-practices)
-  * [Key Features](#key-features)
-  * [Abstracted Cryptographic Operations](#abstracted-cryptographic-operations)
   * [Requirements](#requirements)
   * [Installation](#installation)
     * [Option 1: Build from source](#option-1-build-from-source)
@@ -33,7 +32,22 @@
 
 ## Overview
 
-CryptoHandler is a high-level C++23 library that provides a clean interface to OpenSSL cryptographic operations. It simplifies usage of common cryptographic primitives by abstracting away the complexities of OpenSSL's C-style API.
+CryptoHandler is a modern C++23 library that simplifies cryptographic operations with a user-friendly interface. By abstracting away the complexities of OpenSSL's C-style API, it enables developers to quickly perform secure, high-level cryptographic operations with minimal boilerplate.
+
+Designed with performance, safety, and code clarity in mind, this library is ideal for applications requiring robust cryptographic functionality without needing in-depth expertise in OpenSSL internals.
+
+## Key Features
+
+- **Modern C++ Abstractions**: Provides a high-level interface around OpenSSL's cryptographic operations using type-safe C++23 constructs, making it easier to use.
+- **Memory Safety**: Leverages RAII principles and smart pointers for automatic resource management, reducing manual memory management risks.
+- **Error Handling**: Implements `std::expected` for robust and exception-free error reporting.
+- **Abstracted Cryptographic Operations**:
+  - **Symmetric Encryption/Decryption**: Clean and simplified APIs for encrypting and decrypting with symmetric ciphers, including AES (CBC, GCM, CTR).
+  - **Message Digests**: Easily calculate cryptographic hash values with optional truncation (e.g., SHA-256).
+  - **MAC Algorithms**: Provides HMAC, CBC-MAC, and GMAC functionality for keyed message authentication.
+  - **Legacy Cipher Support**: Offers transparent handling of legacy ciphers via OpenSSL provider configurations.
+- **ByteArray Utility**: Includes seamless integration with the custom ByteArray library ([ByteArray Ops (byte-ao)](https://github.com/jurassiclizard/byte-ao)), allowing efficient manipulation of binary data (e.g., concatenations, secure memory wiping).
+- **Reduced Boilerplate**: Minimizes repetitive error-handling code, resource cleanup, and buffer management by abstracting these complexities.
 
 
 ## ⚠️ **SECURITY ADVISORIES**
@@ -75,21 +89,6 @@ When using this library, please consider the following security recommendations:
 - **Verification**:
     - Test cryptographic operations with known test vectors
     - Verify authenticated encryption with tampered data to confirm detection
-
-## Key Features
-
-- **Modern C++ Abstractions**: Wraps OpenSSL's C-style buffer APIs with type-safe C++23 interfaces
-- **Memory Safety**: Automatic resource management using RAII principles and smart pointers
-- **Error Handling**: Uses `std::expected` for robust error reporting without exceptions
-- **ByteArray Utility**: Integrates with my custom ByteArray library ([ByteArray Ops (byte-ao)](https://github.com/jurassiclizard/byte-ao)), enabling high-level byte array operations such as concatenations, secure memory wiping, and efficient binary data handling.
-- **Reduced Boilerplate**: Eliminates repetitive error handling and buffer management code
-
-## Abstracted Cryptographic Operations
-
-- **Symmetric Encryption/Decryption**: Clean interface to cipher operations
-- **Message Digests**: Simplified hashing with optional truncation
-- **MAC Algorithms**: HMAC, CBC-MAC, and GMAC implementations
-- **Legacy Support**: Transparent handling of legacy ciphers via OpenSSL providers
 
 
 ## Requirements
