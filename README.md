@@ -337,7 +337,7 @@ int main() {
 
 ### GMAC Calculation
 
-```
+```cpp
 #include "jlizard/CryptoHandler.h"
 #include "jlizard/byte_array.h"
 #include <openssl/evp.h>
