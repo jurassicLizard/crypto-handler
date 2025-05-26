@@ -6,17 +6,10 @@
 * [CryptoHandler](#cryptohandler)
   * [Overview](#overview)
   * [Key Features](#key-features)
-  * [⚠️ **SECURITY ADVISORIES**](#-security-advisories)
-  * [Security Best Practices](#security-best-practices)
   * [Requirements](#requirements)
   * [Installation](#installation)
     * [Option 1: Build from source](#option-1-build-from-source)
     * [Option 2: Include via CMake FetchContent](#option-2-include-via-cmake-fetchcontent)
-  * [Running Tests](#running-tests)
-    * [Prerequisites for Testing](#prerequisites-for-testing)
-    * [Building and Running Tests](#building-and-running-tests)
-    * [Test Coverage](#test-coverage)
-  * [Tips on Padding Options](#tips-on-padding-options)
   * [Usage Examples](#usage-examples)
     * [Symmetric Encryption/Decryption (General)](#symmetric-encryptiondecryption-general)
     * [Symmetric Encryption/Decryption (GCM)](#symmetric-encryptiondecryption-gcm)
@@ -24,10 +17,20 @@
     * [HMAC Calculation](#hmac-calculation)
     * [CBC-MAC Calculation](#cbc-mac-calculation)
     * [GMAC Calculation](#gmac-calculation)
-  * [Error Handling](#error-handling)
-  * [Future Plans](#future-plans)
-  * [Changelog](#changelog)
-  * [License](#license)
+  * [Security Considerations](#security-considerations)
+    * [⚠️ **SECURITY ADVISORIES**](#-security-advisories)
+    * [Security Best Practices](#security-best-practices)
+  * [Advanced Usage](#advanced-usage)
+    * [Tips on Padding Options](#tips-on-padding-options)
+    * [Error Handling](#error-handling)
+  * [Testing & Development](#testing--development)
+    * [Prerequisites for Testing](#prerequisites-for-testing)
+    * [Building and Running Tests](#building-and-running-tests)
+    * [Test Coverage](#test-coverage)
+  * [Project Information](#project-information)
+    * [Future Plans](#future-plans)
+    * [Changelog](#changelog)
+    * [License](#license)
 <!-- TOC -->
 
 ## Overview
@@ -49,48 +52,6 @@ Designed with performance, safety, and code clarity in mind, this library is ide
 - **ByteArray Utility**: Includes seamless integration with the custom ByteArray library ([ByteArray Ops (byte-ao)](https://github.com/jurassiclizard/byte-ao)), allowing efficient manipulation of binary data (e.g., concatenations, secure memory wiping).
 - **Reduced Boilerplate**: Minimizes repetitive error-handling code, resource cleanup, and buffer management by abstracting these complexities.
 
-
-## ⚠️ **SECURITY ADVISORIES**
-
-> ⚠️ **IMPORTANT NOTICE**: 
-> Cryptographic implementations require precise implementation details
-> and must undergo thorough security audits before deployment in production environments.
-> This library has **NOT** been formally audited. Use at your own risk.
-
-> ⚠️ **SECURITY ADVISORY**: CBC mode encryption requires additional authentication mechanisms.
-> Without proper authentication, CBC is vulnerable to padding oracle attacks and other cryptographic threats.
-> For most applications, authenticated encryption modes such as GCM are strongly recommended.
-
-> ⚠️ **MEMORY SECURITY NOTE**: This library does not automatically purge sensitive data from memory.
-> While ByteArray provides a secure_erase method, we recommend using OpenSSL_cleanse()
-> which has undergone extensive security review and provides more reliable and deterministic memory clearing.
-
-
-
-## Security Best Practices
-
-When using this library, please consider the following security recommendations:
-
-- **Key Management**:
-    - Never use hardcoded or predictable keys/IVs in production
-    - Generate cryptographically secure random values for keys, IVs, and nonces
-    - Keep keys protected using proper key management techniques
-
-- **Algorithm Selection**:
-    - Always use authenticated encryption (like AES-GCM) for data protection
-    - Prefer modern, well-reviewed cryptographic algorithms
-
-- **Implementation Security**:
-    - Securely erase sensitive data using OpenSSL_cleanse() after use
-    - Update OpenSSL regularly to receive security patches
-    - Enable compiler security flags when building your application
-    - Consider timing attacks when implementing security-sensitive code
-
-- **Verification**:
-    - Test cryptographic operations with known test vectors
-    - Verify authenticated encryption with tampered data to confirm detection
-
-
 ## Requirements
 
 - C++23 compatible compiler
@@ -107,7 +68,9 @@ cmake ..
 make
 ```
 ### Option 2: Include via CMake FetchContent
+
 Add CryptoHandler to your CMake project using FetchContent:
+
 ``` cmake
 include(FetchContent)
 
@@ -121,83 +84,6 @@ FetchContent_MakeAvailable(crypto-handler)
 # Link against the library in your target
 target_link_libraries(your_target PRIVATE jlizard::crypto-handler)
 ```
-
-## Running Tests
-
-CryptoHandler includes a comprehensive test suite to verify functionality and correctness. The tests cover various cryptographic operations and error handling scenarios.
-
-### Prerequisites for Testing
-
-CTest from CMake is used for testing therefore no special configuration is required. The same [Requirements](#requirements) apply as those for the installation
-
-
-### Building and Running Tests
-
-```bash
-# Clone the repository
-git clone https://github.com/jurassiclizard/crypto-handler.git 
-cd crypto-handler
-# Create a build directory and build
-mkdir build && cd build
-# Configure with testing enabled
-cmake .. -DBUILD_TESTING=ON
-# Build the project and tests
-make
-# Run all tests
-ctest
-# Or run the test executable directly for more detailed output
-./tests/crypto_handler_tests
-``` 
-
-### Test Coverage
-
-The test suite includes:
-
-- Encryption/decryption with various ciphers and modes
-- Verification of authenticated encryption (GCM)
-- Error cases such as:
-  - Invalid keys and IVs
-  - Data tampering detection
-  - Incompatible algorithm parameters
-- Message digest calculations
-- MAC operations (HMAC, CBC-MAC, GMAC)
-- Memory wiping functionality
-
-## Tips on Padding Options
-
-1. For GCM mode:
-   The padding parameter is ignored since GCM operates on full blocks internally.
-   all of these calls are equivalent for GCM:
-
-    ```cpp
-       handler.encrypt(plaintext, key,iv) // Padding enabled(but ignored)
-       handler.encrypt(plaintext, key, iv, true); // Padding enabled (but ignored)
-       handler.encrypt(plaintext, key, iv, false); // Padding disabled (but ignored)
-    ```
-2. For CBC mode:
-- WITH padding (recommended for most use cases):
-  Both of the these calls are equivalent for CBC
-  ```cpp
-  // Alternative 1 (padding enabled implicitly)
-  handler.encrypt(plaintext, key,iv);
-  // Alternative 2 (explicit enabling for more readability)
-  handler.encrypt(plaintext, key, iv, true);
-  ```
-  This handles messages of any length automatically.
-
-- WITHOUT padding (only for special cases):
-  `handler.encrypt(plaintext, key, iv, false);`
-
-  > NOTE : Only disable padding when your data is guaranteed to be a multiple of the block size
-  > (16 bytes for AES). Otherwise, encryption will fail.
-
-
-Choose the appropriate mode based on your security requirements:
-- GCM: When you need authentication and integrity protection (recommended)
-- CBC: For legacy systems, but always pair with a MAC for integrity protection
-- CTR: very tricky to get right due to special care for nonce handling
-- OFB: same as CTR should be avoided in favor of CBC or GCM
-
 
 ## Usage Examples
 
@@ -219,8 +105,7 @@ int main() {
     
      jlizard::ByteArray plaintext = ByteArray::create_from_string("Hello World!");
     
-    // Alternatively use an initializer list ()
-    // string bytes (same as create_from_string used above)
+    // Alternatively use an initializer list () (same as create_from_string used above)
     // jlizard::ByteArray plaintext = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
     // random bytes
     // jlizard::ByteArray plaintext = {0x7a, 0xbc, 0x1f, 0x3d, 0x82, 0xe5, 0x9c, 0x4b, 0xf3, 0x6d, 0xa2, 0x58};
@@ -232,14 +117,14 @@ int main() {
     // both encrypt and decrypt return a value of type std::expected<ByteArray,CryptoHandlerError>
     auto encrypted = handler.encrypt(plaintext, key, iv, true);
     if (!encrypted) {
-        std::cerr << "Encryption failed: " << encrypted.error().what() << std::endl;
+        std::cerr << "Encryption failed: " << encrypted.error().err_message << std::endl;
         return 1;
     }
     
     // Decrypt with std::expected error handling
     auto decrypted = handler.decrypt(encrypted.value(), key, iv, true);
     if (!decrypted) {
-        std::cerr << "Decryption failed: " << decrypted.error().what() << std::endl;
+        std::cerr << "Decryption failed: " << decrypted.error().err_message << std::endl;
         return 1;
     }
     
@@ -291,7 +176,7 @@ int main() {
     // Or use simplified overload for GCM mode
     // auto encrypted = handler.encrypt(plaintext, key, iv, tag, aad);
     if (!encrypted) {
-        std::cerr << "Encryption failed: " << encrypted.error().what() << std::endl;
+        std::cerr << "Encryption failed: " << encrypted.error().err_message << std::endl;
         return 1;
     }
     
@@ -303,7 +188,7 @@ int main() {
     // Decrypt with GCM, providing tag and AAD for authentication
     auto decrypted = handler.decrypt(encrypted.value(), key, iv, tag, aad, false);
     if (!decrypted) {
-        std::cerr << "Decryption failed: " << decrypted.error().what() << std::endl;
+        std::cerr << "Decryption failed: " << decrypted.error().err_message << std::endl;
         return 1;
     }
     
@@ -326,6 +211,7 @@ int main() {
 
 
 ### Calculating Message Digests
+
 ```cpp 
 #include "jlizard/CryptoHandler.h"
 #include "jlizard/byte_array.h"
@@ -343,7 +229,7 @@ int main() {
     // Calculate digest with std::expected error handling
     auto digest = handler.calculate_digest(message);
     if (!digest) {
-        std::cerr << "Digest calculation failed: " << digest.error().what() << std::endl;
+        std::cerr << "Digest calculation failed: " << digest.error().err_message << std::endl;
         return 1;
     }
     
@@ -354,7 +240,7 @@ int main() {
     // You can also calculate a truncated digest
     auto truncated = handler.calculate_digest_truncated(message, 128); // 128 bits
     if (!truncated) {
-        std::cerr << "Truncated digest failed: " << truncated.error().what() << std::endl;
+        std::cerr << "Truncated digest failed: " << truncated.error().err_message << std::endl;
         return 1;
     }
     
@@ -373,6 +259,7 @@ int main() {
 ``` 
 
 ### HMAC Calculation
+
 ```cpp
 #include "jlizard/CryptoHandler.h"
 #include "jlizard/byte_array.h"
@@ -393,7 +280,7 @@ int main() {
     
     // Display the result
     std::cout << "HMAC-SHA256: ";
-    std::cout << hmac.value().as_hex_string() << std::endl;
+    std::cout << hmac.as_hex_string() << std::endl;
       
     
     // Proper cleanup of sensitive data
@@ -408,6 +295,7 @@ int main() {
 ``` 
 
 ### CBC-MAC Calculation
+
 ```cpp
 #include "jlizard/CryptoHandler.h"
 #include "jlizard/byte_array.h"
@@ -426,7 +314,7 @@ int main() {
     // Calculate CBC-MAC with std::expected error handling
     auto mac = handler.calculate_cbc_mac(message, key);
     if (!mac) {
-        std::cerr << "CBC-MAC calculation failed: " << mac.error().what() << std::endl;
+        std::cerr << "CBC-MAC calculation failed: " << mac.error().err_message << std::endl;
         return 1;
     }
     
@@ -446,6 +334,7 @@ int main() {
 ``` 
 
 ### GMAC Calculation
+
 ```
 #include "jlizard/CryptoHandler.h"
 #include "jlizard/byte_array.h"
@@ -465,7 +354,7 @@ int main() {
     // Calculate GMAC with std::expected error handling
     auto gmac = handler.calculate_gmac(aad, key, iv);
     if (!gmac) {
-        std::cerr << "GMAC calculation failed: " << gmac.error().what() << std::endl;
+        std::cerr << "GMAC calculation failed: " << gmac.error().err_message << std::endl;
         return 1;
     }
     
@@ -484,22 +373,144 @@ int main() {
     return 0;
 }
 ``` 
+## Security Considerations
 
-## Error Handling
+### ⚠️ **SECURITY ADVISORIES**
+
+> ⚠️ **IMPORTANT NOTICE**:
+> Cryptographic implementations require precise implementation details
+> and must undergo thorough security audits before deployment in production environments.
+> This library has **NOT** yet been formally audited. Use at your own risk.
+
+> ⚠️ **SECURITY ADVISORY**: CBC mode encryption requires additional authentication mechanisms.
+> Without proper authentication, CBC is vulnerable to padding oracle attacks and other cryptographic threats.
+> For most applications, authenticated encryption modes such as GCM are strongly recommended.
+
+> ⚠️ **MEMORY SECURITY NOTE**: This library does not automatically purge sensitive data from memory.
+> While ByteArray provides a secure_erase method, we recommend using OpenSSL_cleanse()
+> which has undergone extensive security review and provides more reliable and deterministic memory clearing.
+
+
+
+### Security Best Practices
+
+When using this library, please consider the following security recommendations:
+
+- **Key Management**:
+  - Never use hardcoded or predictable keys/IVs in production
+  - Generate cryptographically secure random values for keys, IVs, and nonces
+  - Keep keys protected using proper key management techniques
+
+- **Algorithm Selection**:
+  - Always use authenticated encryption (like AES-GCM) for data protection
+  - Prefer modern, well-reviewed cryptographic algorithms
+
+- **Implementation Security**:
+  - Securely erase sensitive data using OpenSSL_cleanse() after use
+  - Update OpenSSL regularly to receive security patches
+  - Enable compiler security flags when building your application
+  - Consider timing attacks when implementing security-sensitive code
+
+- **Verification**:
+  - Test cryptographic operations with known test vectors
+  - Verify authenticated encryption with tampered data to confirm detection
+
+## Advanced Usage
+
+### Tips on Padding Options
+
+1. For GCM mode:
+   The padding parameter is ignored since GCM operates on full blocks internally.
+   all of these calls are equivalent for GCM:
+
+    ```cpp
+       handler.encrypt(plaintext, key,iv) // Padding enabled(but ignored)
+       handler.encrypt(plaintext, key, iv, true); // Padding enabled (but ignored)
+       handler.encrypt(plaintext, key, iv, false); // Padding disabled (but ignored)
+    ```
+2. For CBC mode:
+- WITH padding (recommended for most use cases):
+  Both of the these calls are equivalent for CBC
+  ```cpp
+  // Alternative 1 (padding enabled implicitly)
+  handler.encrypt(plaintext, key,iv);
+  // Alternative 2 (explicit enabling for more readability)
+  handler.encrypt(plaintext, key, iv, true);
+  ```
+  This handles messages of any length automatically.
+
+- WITHOUT padding (only for special cases):
+  `handler.encrypt(plaintext, key, iv, false);`
+
+  > NOTE : Only disable padding when your data is guaranteed to be a multiple of the block size
+  > (16 bytes for AES). Otherwise, encryption will fail.
+
+
+Choose the appropriate mode based on your security requirements:
+- GCM: When you need authentication and integrity protection (recommended)
+- CBC: For legacy systems, but always pair with a MAC for integrity protection
+- CTR: very tricky to get right due to special care for nonce handling
+- OFB: same as CTR should be avoided in favor of CBC or GCM
+
+
+### Error Handling
 
 CryptoHandler uses C++20's `std::expected` for most operations, providing clear error reporting:
 ```cpp
 auto result = handler.encrypt(plaintext, key, iv, true);
 if (!result) {
     // Handle error
-    std::cerr << "Error: " << result.error().what() << std::endl;
+    std::cerr << "Error: " << result.error().err_message << std::endl;
 } else {
     // Use result.value()
     auto encrypted_data = result.value();
 }
+```
+
+## Testing & Development
+
+CryptoHandler includes a comprehensive test suite to verify functionality and correctness. The tests cover various cryptographic operations and error handling scenarios.
+
+### Prerequisites for Testing
+
+CTest from CMake is used for testing; therefore, no special configuration is required. The same [Requirements](#requirements) apply as those for the installation
+
+
+### Building and Running Tests
+
+```bash
+# Clone the repository
+git clone https://github.com/jurassiclizard/crypto-handler.git 
+cd crypto-handler
+# Create a build directory and build
+mkdir build && cd build
+# Configure with testing enabled
+cmake .. -DBUILD_TESTING=ON
+# Build the project and tests
+make
+# Run all tests
+ctest
+# Or run the test executable directly for more detailed output
+./tests/crypto_handler_tests
 ``` 
 
-## Future Plans
+### Test Coverage
+
+The test suite includes:
+
+- Encryption/decryption with various ciphers and modes
+- Verification of authenticated encryption (GCM)
+- Error cases such as:
+  - Invalid keys and IVs
+  - Data tampering detection
+  - Incompatible algorithm parameters
+- Message digest calculations
+- MAC operations (HMAC, CBC-MAC, GMAC)
+- Memory wiping functionality
+
+
+## Project Information
+### Future Plans
 
 - Asymmetric cryptography support (RSA, ECDSA)
 - Key derivation functions (PBKDF2, HKDF)
@@ -509,10 +520,10 @@ if (!result) {
 - CMake package configuration
 - RAII cleansing of data
 
-## Changelog
+### Changelog
 Changes between version increments are documented under [Changelog](CHANGELOG.md)
 
-## License
+### License
 
 This project is licensed under the MIT License - see the license notice at the top of source files for details.
 ```
