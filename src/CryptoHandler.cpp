@@ -168,8 +168,8 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(
     const ByteArray& plaintext_bytes,
     const ByteArray& key,
     const ByteArray& iv,
-    std::optional<ByteArray>& tag_out,
-    std::optional<const ByteArray>& aad,
+    ByteArray& tag_out,
+    const ByteArray& aad,
     const bool bAllowPadding)
 {
     // Pre-allocate ciphertext buffer with sufficient space
@@ -177,13 +177,13 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(
     ByteArray ciphertext_bytes(plaintext_bytes.size() + block_size,0x00);
 
     // Handle AAD - pass nullptr if empty
-    const unsigned char* aad_ptr = aad.has_value() && !aad.value().empty() ?
-                                            const_cast<ByteArray&>(aad.value()).data() : nullptr;
-    const auto aad_size = aad.value_or(ByteArray()).size();
+    const unsigned char* aad_ptr =  !aad.empty() ?
+                const_cast<ByteArray&>(aad).data() : nullptr;
+    const auto aad_size = aad.size();
 
     // Handle tag - pass nullptr to openssl api if empty or not in GCM mode
-    unsigned char* tag_ptr = tag_out.has_value() && !tag_out.value().empty() ? tag_out.value().data() : nullptr;
-    const auto tag_size = tag_out.value_or(ByteArray()).size();
+    unsigned char* tag_ptr = !tag_out.empty() ? tag_out.data() : nullptr;
+    const auto tag_size = tag_out.size();
     // In GCM mode, verify tag_out is properly sized
     if (EVP_CIPHER_mode(m_cipher) == EVP_CIPH_GCM_MODE && (tag_size < 12 || tag_size > 16)) {
         return std::unexpected(CryptoHandlerError::with_msg("Expected Tag buffer to be between 12 and 16 bytes for GCM mode"));
@@ -214,10 +214,16 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(
 
 }
 
+std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(const ByteArray& plaintext_bytes, const ByteArray& key, const ByteArray& iv, ByteArray& tag_out, const bool bAllowPadding)
+{
+    const ByteArray aad{};
+    return encrypt(plaintext_bytes,key,iv,tag_out,aad,bAllowPadding);
+}
+
 std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(const ByteArray& plaintext_bytes, const ByteArray& key, const ByteArray& iv, const bool bAllowPadding)
 {
-    std::optional<ByteArray> tag_out = std::nullopt;
-    std::optional<const ByteArray> aad = std::nullopt;
+    ByteArray tag_out{};
+    const ByteArray aad{};
     return encrypt(plaintext_bytes,key,iv,tag_out,aad,bAllowPadding);
 }
 
@@ -226,8 +232,8 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(
     const ByteArray& ciphertext_bytes,
     const ByteArray& key,
     const ByteArray& iv,
-    std::optional<const ByteArray>& tag,
-    std::optional<const ByteArray>& aad,
+    const ByteArray& tag,
+    const ByteArray& aad,
     const bool bAllowPadding
 )
 {
@@ -238,25 +244,25 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(
     // Handle AAD - pass nullptr if not provided
     const unsigned char* aad_ptr = nullptr;
     size_t aad_size = 0;
-    if (aad.has_value()) {
-        aad_ptr = const_cast<ByteArray&>(aad.value()).data();
-        aad_size = aad->size();
+    if (!aad.empty()) {
+        aad_ptr = const_cast<ByteArray&>(aad).data();
+        aad_size = aad.size();
     }
 
     // Handle tag - pass nullptr if not provided
     const unsigned char* tag_ptr = nullptr;
     size_t tag_size = 0;
-    if (tag.has_value()) {
-        tag_ptr = const_cast<ByteArray&>(tag.value()).data();
-        tag_size = tag->size();
+    if (!tag.empty()) {
+        tag_ptr = const_cast<ByteArray&>(tag).data();
+        tag_size = tag.size();
     }
 
     // In GCM mode, verify tag is properly sized
     if (EVP_CIPHER_mode(m_cipher) == EVP_CIPH_GCM_MODE) {
-        if (!tag.has_value()) {
+        if (tag_ptr == nullptr) {
             return std::unexpected(CryptoHandlerError::with_msg("Tag is required for GCM mode"));
         }
-        if (tag->size() < 12) {
+        if (tag.size() < 12) {
             return std::unexpected(CryptoHandlerError::with_msg("Tag too small for GCM mode"));
         }
     }
@@ -290,8 +296,14 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(
 
 std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(const ByteArray& ciphertext_bytes, const ByteArray& key, const ByteArray& iv, bool bAllowPadding)
 {
-    std::optional<const ByteArray> tag = std::nullopt;
-    std::optional<const ByteArray> aad = std::nullopt;
+    const ByteArray tag{};
+    const ByteArray aad{};
+    return decrypt(ciphertext_bytes,key,iv,tag,aad,bAllowPadding);
+}
+
+std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(const ByteArray& ciphertext_bytes, const ByteArray& key, const ByteArray& iv, const ByteArray& tag, bool bAllowPadding)
+{
+    const ByteArray aad{};
     return decrypt(ciphertext_bytes,key,iv,tag,aad,bAllowPadding);
 }
 

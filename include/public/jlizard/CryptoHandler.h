@@ -115,15 +115,15 @@ public:
         const ByteArray& plaintext_bytes,
         const ByteArray& key,
         const ByteArray& iv,
-        std::optional<ByteArray>& tag_out,
-        std::optional<const ByteArray>& aad,
-        const bool bAllowPadding = true);
+        ByteArray& tag_out,
+        const ByteArray& aad,
+        bool bAllowPadding = true);
     /**
      * @brief Simplified version of encrypt that doesn't return authentication tags.
      *
-     * @details This is a convenience overload that calls the full version with default
+     * @details This is a convenience overload that calls the full version while ignoring
      * values for tag_out and aad parameters. Use this version when you don't need
-     * authenticated encryption features.
+     * authenticated encryption features (non-GCM modes).
      *
      * @param plaintext_bytes The data to be encrypted
      * @param key The encryption key
@@ -138,6 +138,31 @@ public:
     const ByteArray& key,
     const ByteArray& iv,
     const bool bAllowPadding = true);
+
+        /**
+     * @brief Simplified version of encrypt that only returns authentication tags but
+     * doesn't make use of the aad data.
+     *
+     * @details This is a convenience overload that calls the full version while ignoring
+     * values for aad parameters. Use this version when intending to use authenticated encryption
+     * modes (GCM), authentication tags are output to tag_out
+     *
+     * @param plaintext_bytes The data to be encrypted
+     * @param key The encryption key
+     * @param iv The initialization vector
+     * @param tag_out Output parameter that will receive the authentication tag when using GCM mode.
+     *                Must be pre-allocated with sufficient size (16 bytes recommended).
+     *                Ignored in non-GCM modes
+     * @param bAllowPadding Whether padding should be applied (defaults to true)
+     * @return std::expected<ByteArray, CryptoHandlerError> The encrypted data or an error
+     *
+     * @see encrypt(const ByteArray&, const ByteArray&, const ByteArray&, bool, std::optional<ByteArray>&, std::optional<const ByteArray>&)
+     */
+    std::expected<ByteArray, CryptoHandlerError> encrypt(const ByteArray& plaintext_bytes,
+        const ByteArray& key,
+        const ByteArray& iv,
+        ByteArray& tag_out,
+        const bool bAllowPadding = false);
      /**
      * @brief Decrypts data using the configured cipher
      *
@@ -169,15 +194,64 @@ public:
         const ByteArray& ciphertext_bytes,
         const ByteArray& key,
         const ByteArray& iv,
-        std::optional<const ByteArray>& tag,
-        std::optional<const ByteArray>& aad,
+        const ByteArray& tag,
+        const ByteArray& aad,
         bool bAllowPadding = true
-);
+    );
+    /**
+     * @brief Simplified version of decrypt that doesn't use authentication tags or AAD
+     *
+     * @details This is a convenience overload that calls the full version while omitting
+     * tag and aad parameters. Use this version for non-authenticated encryption modes
+     * (non-GCM modes) where authentication tags and AAD are not needed.
+     *
+     * @param ciphertext_bytes The encrypted data to be decrypted
+     * @param key The decryption key (must match the expected key length for the cipher)
+     * @param iv The initialization vector (must match the expected IV length for the cipher)
+     * @param bAllowPadding If true, removes padding according to the cipher's default scheme.
+     *                      If false, expects the plaintext to have no padding
+     *                      (except for stream ciphers)
+     *
+     * @return On success, returns the decrypted plaintext as a ByteArray.
+     *         On failure, returns a CryptoHandlerError with an error message
+     *
+     * @see decrypt(const ByteArray&, const ByteArray&, const ByteArray&, const ByteArray&, const ByteArray&, bool)
+     */
     std::expected<ByteArray, CryptoHandlerError> decrypt(
         const ByteArray& ciphertext_bytes,
         const ByteArray& key,
         const ByteArray& iv,
-        bool bAllowPadding);
+        bool bAllowPadding = true);
+
+    /**
+     * @brief Simplified version of decrypt that uses authentication tags but no AAD
+     *
+     * @details This is a convenience overload that calls the full version while omitting
+     * the aad parameter. Use this version for authenticated encryption modes (GCM)
+     * where you need to verify authentication tags but don't have additional authenticated data.
+     *
+     * @param ciphertext_bytes The encrypted data to be decrypted
+     * @param key The decryption key (must match the expected key length for the cipher)
+     * @param iv The initialization vector (must match the expected IV length for the cipher)
+     * @param tag The authentication tag when using GCM mode. Required for successful
+     *            authenticated decryption in GCM mode. Ignored in non-GCM modes
+     * @param bAllowPadding If true, removes padding according to the cipher's default scheme.
+     *                      If false, expects the plaintext to have no padding
+     *                      (except for stream ciphers and GCM mode where this boolean is effectively false
+     *                      and has no effect)
+     *
+     * @return On success, returns the decrypted plaintext as a ByteArray.
+     *         On failure, returns a CryptoHandlerError with an error message
+     *
+     * @note In GCM mode, authentication failure will result in an error
+     * @see decrypt(const ByteArray&, const ByteArray&, const ByteArray&, const ByteArray&, const ByteArray&, bool)
+     */
+    std::expected<ByteArray, CryptoHandlerError> decrypt(
+        const ByteArray& ciphertext_bytes,
+        const ByteArray& key,
+        const ByteArray& iv,
+        const ByteArray& tag,
+        bool bAllowPadding = true);
 
     std::expected<ByteArray, CryptoHandlerError> calculate_digest(const ByteArray& message);
     void calculate_digest(const std::vector<unsigned char>& message,

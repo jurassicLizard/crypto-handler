@@ -313,7 +313,7 @@ void test_aes_gcm() {
     ByteArray iv(12, 0x24); // 96-bit IV for GCM
 
     // AAD using a realistic example of protocol metadata
-    std::optional<const ByteArray> aad = ByteArray{
+    auto aad = ByteArray{
         0x01, 0x02, // Protocol version (1.2)
         0x00, 0x00, 0x00, 0x01, // Message ID
         0x00, 0x05, // Sender ID length
@@ -323,15 +323,15 @@ void test_aes_gcm() {
     };
 
 
-    std::optional<ByteArray> tag_out = ByteArray(16,0x00);
+    ByteArray tag_out(16,0x00);
     auto encrypted = handler.encrypt(plaintext, key, iv,tag_out,aad);
     assert(encrypted.has_value());
 
-    if (!tag_out.has_value())
+    if (tag_out.empty())
     {
         throw std::runtime_error("Expected to get a tag from gcm encryption but got none");
     }
-    std::optional<const ByteArray> tag = tag_out;
+    const auto tag = tag_out;
     auto decrypted = handler.decrypt(encrypted.value(), key, iv,tag,aad);
     assert(decrypted.has_value());
     assert(plaintext == decrypted.value());
@@ -355,15 +355,13 @@ void test_aes_gcm_missing_tag() {
     ByteArray iv(12, 0x24); // 96-bit IV for GCM
 
     // Encrypt with tag
-    std::optional<ByteArray> tag_out = ByteArray(16, 0x00);
-    auto no_aad = std::optional<const ByteArray>(std::nullopt);
-    auto encrypted = handler.encrypt(plaintext, key, iv, tag_out, no_aad);
+    ByteArray tag_out = ByteArray(16, 0x00);
+    auto encrypted = handler.encrypt(plaintext, key, iv, tag_out);
     assert(encrypted.has_value());
-    assert(tag_out.has_value());
+    assert(!tag_out.empty());
 
     // Try to decrypt without providing the tag
-    std::optional<const ByteArray> no_tag = std::nullopt;
-    auto decrypted = handler.decrypt(encrypted.value(), key, iv, no_tag, no_aad);
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv);
 
     // Should fail with an error
     assert(!decrypted.has_value());
@@ -381,18 +379,16 @@ void test_aes_gcm_small_tag() {
     ByteArray iv(12, 0x24); // 96-bit IV for GCM
 
     // Encrypt with proper tag size
-    std::optional<ByteArray> tag_out = ByteArray(16, 0x00);
-    auto no_aad = std::optional<const ByteArray>(std::nullopt);
-    auto encrypted = handler.encrypt(plaintext, key, iv, tag_out, no_aad);
+    auto tag_out = ByteArray(16, 0x00);
+    auto encrypted = handler.encrypt(plaintext, key, iv,tag_out);
     assert(encrypted.has_value());
-    assert(tag_out.has_value());
+    assert(!tag_out.empty());
 
     // Create a small tag (only 8 bytes) by copying part of the original tag
-    ByteArray small_tag(tag_out->begin(), tag_out->begin() + 8);
-    std::optional<const ByteArray> small_tag_opt = small_tag;
+    const ByteArray small_tag(tag_out.begin(), tag_out.begin() + 8);
 
     // Try to decrypt with the small tag
-    auto decrypted = handler.decrypt(encrypted.value(), key, iv, small_tag_opt, no_aad);
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv, small_tag);
 
     // Should fail with an error about tag size
     assert(!decrypted.has_value());
@@ -409,8 +405,8 @@ void test_aes_gcm_empty_tag_buffer() {
     ByteArray iv(12, 0x24); // 96-bit IV for GCM
 
     // Try to encrypt with an empty tag buffer
-    std::optional<ByteArray> empty_tag = ByteArray();
-    auto no_aad = std::optional<const ByteArray>(std::nullopt);
+    ByteArray empty_tag{};
+    const ByteArray no_aad{};
     auto encrypted = handler.encrypt(plaintext, key, iv, empty_tag, no_aad);
 
     // Should fail with an error about tag size
@@ -428,13 +424,12 @@ void test_aes_gcm_large_tag_buffer() {
     ByteArray iv(12, 0x24); // 96-bit IV for GCM
 
     // Encrypt with a larger than needed tag buffer (24 bytes)
-    std::optional<ByteArray> large_tag = ByteArray(24, 0x00);
-    auto no_aad = std::optional<const ByteArray>(std::nullopt);
-    auto encrypted = handler.encrypt(plaintext, key, iv, large_tag, no_aad);
+    auto large_tag = ByteArray(24, 0x00);
+    auto encrypted = handler.encrypt(plaintext, key, iv, large_tag);
 
     // Should fail
     assert(!encrypted.has_value() && encrypted.error().err_message.find("between 12 and 16 bytes"));
-    assert(large_tag.has_value());
+    assert(!large_tag.empty());
 
     std::cout << "AES-GCM large tag buffer test passed" << std::endl;
 }

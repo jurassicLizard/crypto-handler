@@ -13,24 +13,30 @@
   * [Installation](#installation)
     * [Option 1: Build from source](#option-1-build-from-source)
     * [Option 2: Include via CMake FetchContent](#option-2-include-via-cmake-fetchcontent)
+  * [Running Tests](#running-tests)
+    * [Prerequisites for Testing](#prerequisites-for-testing)
+    * [Building and Running Tests](#building-and-running-tests)
+    * [Test Coverage](#test-coverage)
   * [Usage Examples](#usage-examples)
-    * [Symmetric Encryption/Decryption](#symmetric-encryptiondecryption)
+    * [Tips on Padding Options](#tips-on-padding-options)
+    * [Symmetric Encryption/Decryption (General)](#symmetric-encryptiondecryption-general)
+    * [Symmetric Encryption/Decryption (GCM)](#symmetric-encryptiondecryption-gcm)
     * [Calculating Message Digests](#calculating-message-digests)
     * [HMAC Calculation](#hmac-calculation)
     * [CBC-MAC Calculation](#cbc-mac-calculation)
     * [GMAC Calculation](#gmac-calculation)
   * [Error Handling](#error-handling)
   * [Future Plans](#future-plans)
-  * [Contributing](#contributing)
+  * [Changelog](#changelog)
   * [License](#license)
 <!-- TOC -->
 
 ## ⚠️ **SECURITY ADVISORIES**
 
-> ⚠️ **IMPORTANT NOTICE**: This code is provided for educational purposes only.
+> ⚠️ **IMPORTANT NOTICE**: 
 > Cryptographic implementations require precise implementation details
 > and must undergo thorough security audits before deployment in production environments.
-> This library has not been formally audited. Use at your own risk.
+> This library has **NOT** been formally audited. Use at your own risk.
 
 > ⚠️ **SECURITY ADVISORY**: CBC mode encryption requires additional authentication mechanisms.
 > Without proper authentication, CBC is vulnerable to padding oracle attacks and other cryptographic threats.
@@ -115,9 +121,85 @@ FetchContent_MakeAvailable(crypto-handler)
 target_link_libraries(your_target PRIVATE jlizard::crypto-handler)
 ```
 
+## Running Tests
+
+CryptoHandler includes a comprehensive test suite to verify functionality and correctness. The tests cover various cryptographic operations and error handling scenarios.
+
+### Prerequisites for Testing
+
+CTest from CMake is used for testing therefore no special configuration is required. The same [Requirements](#requirements) apply as those for the installation
+
+
+### Building and Running Tests
+
+```bash
+# Clone the repository
+git clone [https://github.com/jurassiclizard/crypto-handler.git](https://github.com/jurassiclizard/crypto-handler.git) cd crypto-handler
+# Create a build directory
+mkdir build && cd build
+# Configure with testing enabled
+cmake .. -DBUILD_TESTING=ON
+# Build the project and tests
+make
+# Run all tests
+ctest
+# Or run the test executable directly for more detailed output
+./tests/crypto_handler_tests
+``` 
+
+### Test Coverage
+
+The test suite includes:
+
+- Encryption/decryption with various ciphers and modes
+- Verification of authenticated encryption (GCM)
+- Error cases such as:
+  - Invalid keys and IVs
+  - Data tampering detection
+  - Incompatible algorithm parameters
+- Message digest calculations
+- MAC operations (HMAC, CBC-MAC, GMAC)
+- Memory wiping functionality
+
+
 ## Usage Examples
 
-### Symmetric Encryption/Decryption
+### Tips on Padding Options
+
+1. For GCM mode:
+   The padding parameter is ignored since GCM operates on full blocks internally.
+   Both of these calls are equivalent for GCM:
+   
+    ```cpp
+       handler.encrypt(plaintext, key,iv) // Padding enabled(but ignored)
+       handler.encrypt(plaintext, key, iv, true); // Padding enabled (but ignored)
+       handler.encrypt(plaintext, key, iv, false); // Padding disabled (but ignored)
+    ```
+2. For CBC mode:
+  - WITH padding (recommended for most use cases):
+    ```cpp
+    // Alternative 1 (padding enabled implicitly)
+    handler.encrypt(plaintext, key,iv);
+    // Alternative 2 (explicit enabling for more readability)
+    handler.encrypt(plaintext, key, iv, true);
+    ```
+    This handles messages of any length automatically.
+
+  - WITHOUT padding (only for special cases):
+    `handler.encrypt(plaintext, key, iv, false);`
+
+    > NOTE : Only disable padding when your data is guaranteed to be a multiple of the block size
+    > (16 bytes for AES). Otherwise, encryption will fail.
+
+
+Choose the appropriate mode based on your security requirements:
+- GCM: When you need authentication and integrity protection (recommended)
+- CBC: For legacy systems, but always pair with a MAC for integrity protection
+- CTR: very tricky to get right due to special care for nonce handling
+- OFB: same as CTR should be avoided in favor of CBC or GCM
+
+
+### Symmetric Encryption/Decryption (General)
 
 ```cpp
 #include "jlizard/CryptoHandler.h"
@@ -125,16 +207,28 @@ target_link_libraries(your_target PRIVATE jlizard::crypto-handler)
 #include <openssl/evp.h>
 #include <iostream>
 
+
+// using namespace jlizard;
+
 int main() {
     // Create a CryptoHandler for AES-256-CBC
     jlizard::CryptoHandler handler(EVP_aes_256_cbc());
     
     // Prepare data, key and IV as ByteArray objects (handles buffer management)
-    jlizard::ByteArray plaintext = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
+    
+     jlizard::ByteArray plaintext = ByteArray::create_from_string("Hello World!");
+    
+    // Alternatively use an initializer list ()
+    // string bytes (same as create_from_string used above)
+    // jlizard::ByteArray plaintext = {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
+    // random bytes
+    // jlizard::ByteArray plaintext = {0x7a, 0xbc, 0x1f, 0x3d, 0x82, 0xe5, 0x9c, 0x4b, 0xf3, 0x6d, 0xa2, 0x58};
+
     jlizard::ByteArray key(32, 0x42);  // 256-bit key
     jlizard::ByteArray iv(16, 0x24);   // 128-bit IV
     
     // Encrypt with std::expected error handling
+    // both encrypt and decrypt return a value of type std::expected<ByteArray,CryptoHandlerError>
     auto encrypted = handler.encrypt(plaintext, key, iv, true);
     if (!encrypted) {
         std::cerr << "Encryption failed: " << encrypted.error().what() << std::endl;
@@ -167,6 +261,70 @@ int main() {
     return 0;
 }
 ``` 
+
+### Symmetric Encryption/Decryption (GCM)
+
+GCM (Galois/Counter Mode) is an authenticated encryption mode that provides both confidentiality and integrity protection. Here's how to use it with CryptoHandler:
+
+```cpp
+#include "jlizard/CryptoHandler.h"
+#include "jlizard/byte_array.h"
+#include <openssl/evp.h>
+#include <iostream>
+
+int main() {
+    // Create a CryptoHandler for AES-256-GCM
+    jlizard::CryptoHandler handler(EVP_aes_256_gcm());
+    
+    // Prepare data, key and IV
+    jlizard::ByteArray plaintext = jlizard::ByteArray::create_from_string("Secret message");
+    jlizard::ByteArray key(32, 0x42);  // 256-bit key
+    jlizard::ByteArray iv(12, 0x24);   // 96-bit IV (recommended for GCM)
+    
+    // Optional authenticated data that won't be encrypted but will be authenticated
+    jlizard::ByteArray aad = jlizard::ByteArray::create_from_string("Additional data");
+    
+    // This will store the authentication tag
+    jlizard::ByteArray tag;
+    
+    // Encrypt with GCM (note: padding parameter is ignored in GCM mode)
+    auto encrypted = handler.encrypt(plaintext, key, iv, tag, aad, false);
+    // Or use simplified overload for GCM mode
+    // auto encrypted = handler.encrypt(plaintext, key, iv, tag, aad);
+    if (!encrypted) {
+        std::cerr << "Encryption failed: " << encrypted.error().what() << std::endl;
+        return 1;
+    }
+    
+    std::cout << "Encryption successful, tag size: " << tag.size() << " bytes\n";
+    
+    // Decrypt with GCM, providing tag and AAD for authentication
+    auto decrypted = handler.decrypt(encrypted.value(), key, iv, tag, aad, false);
+    if (!decrypted) {
+        std::cerr << "Decryption failed: " << decrypted.error().what() << std::endl;
+        return 1;
+    }
+    
+    std::cout << "Decrypted message: ";
+    for (char c : decrypted.value()) {
+        std::cout << c;
+    }
+    std::cout << std::endl;
+    
+    // Proper cleanup of sensitive data
+    plaintext.secure_wipe();
+    key.secure_wipe();
+    iv.secure_wipe();
+    aad.secure_wipe();
+    tag.secure_wipe();
+    encrypted.value().secure_wipe();
+    decrypted.value().secure_wipe();
+    
+    return 0;
+}
+```
+
+
 
 ### Calculating Message Digests
 ```cpp 
@@ -366,9 +524,8 @@ if (!result) {
 - CMake package configuration
 - RAII cleansing of data
 
-## Contributing
-
-This project is currently in active development. 
+## Changelog
+Changes between version increments are documented under [Changelog](CHANGELOG.md)
 
 ## License
 
