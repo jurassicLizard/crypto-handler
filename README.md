@@ -15,8 +15,8 @@ Designed with performance, safety, and code clarity in mind, this library is ide
   * [Key Features](#key-features)
   * [Requirements](#requirements)
   * [Installation](#installation)
-    * [Option 1: Build from source](#option-1-build-from-source)
-    * [Option 2: Include via CMake FetchContent](#option-2-include-via-cmake-fetchcontent)
+    * [Option 1: Include via CMake FetchContent (**Recommended**)](#option-1-include-via-cmake-fetchcontent-recommended)
+    * [Option 2: Build from source and manual linking](#option-2-build-from-source-and-manual-linking)
   * [Usage Examples](#usage-examples)
     * [Symmetric Encryption/Decryption (General)](#symmetric-encryptiondecryption-general)
     * [Symmetric Encryption/Decryption (GCM)](#symmetric-encryptiondecryption-gcm)
@@ -60,16 +60,12 @@ Designed with performance, safety, and code clarity in mind, this library is ide
 - OpenSSL (1.1.1 minimum - more recent versions recommended) (older openSSL implementations are vulnerable and insecure and are not recommended for use)
 - CMake build system
 
+> Note: this project also uses the [ByteArray Ops library](https://github.com/jurassiclizard/byte-ao) transparently. No extra configuration 
+> is needed. This will be pulled, built and statically linked against via CMake FetchContent
+> this dependency is declared under the [CMake dependencies file](cmake/dependencies.cmake) and is configured automatically
+
 ## Installation
-### Option 1: Build from source
-``` bash
-git clone https://github.com/jurassiclizard/crypto-handler.git
-cd crypto-handler
-mkdir build && cd build
-cmake ..
-make
-```
-### Option 2: Include via CMake FetchContent
+### Option 1: Include via CMake FetchContent (**Recommended**)
 
 Add CryptoHandler to your CMake project using FetchContent:
 
@@ -87,6 +83,15 @@ FetchContent_MakeAvailable(crypto-handler)
 target_link_libraries(your_target PRIVATE jlizard::crypto-handler)
 ```
 
+### Option 2: Build from source and manual linking
+``` bash
+git clone https://github.com/jurassiclizard/crypto-handler.git
+cd crypto-handler
+mkdir build && cd build
+cmake ..
+make
+```
+A static library will be found under `build/libcrypto-handler.a` you can link your executable statically against it.
 ## Usage Examples
 
 ### Symmetric Encryption/Decryption (General)

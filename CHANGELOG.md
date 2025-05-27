@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0-alpha.2] - 2025-05-27
 
+### Added
+- Added Note about use of byte-ao repository in README.md
+
 ### Changed
 - Removed redundant calculate_digest signature. Kept only signature in active use, old function was not used
   and doesn't adhere to error propagation methodology applied for other functions
