@@ -48,6 +48,8 @@ namespace jlizard
         ~CryptoHandler();
         CryptoHandler(const CryptoHandler&) = delete;
         CryptoHandler& operator=(const CryptoHandler&) = delete;
+        CryptoHandler(CryptoHandler&&) = delete;
+        CryptoHandler& operator=(CryptoHandler&&) = delete;
 
 
     private:
