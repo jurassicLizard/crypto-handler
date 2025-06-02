@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Removed some redundant comments
 - moved overview before the TOC in the README.md
 - fixed the markdown code display for the gmac example
+
+### Removed
+- Removed redundant main.cpp
+- Removed some redundant comments
 
 ## [0.1.0-alpha.2] - 2025-05-27
 
