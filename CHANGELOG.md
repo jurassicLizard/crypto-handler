@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added CryptoHandler class to jlizard namespace
 
 ### Changed
-- moved overview before the TOC in the README.md
-- fixed the markdown code display for the gmac example
+- Moved overview before the TOC in the README.md
+- Fixed the markdown code display for the gmac example
+- Modified all resize() ops on bytearrays in CryptoHandler to explicitly suppress warning messages when secure purging
 
 ### Removed
 - Removed redundant main.cpp

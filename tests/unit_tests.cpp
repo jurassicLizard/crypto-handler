@@ -146,11 +146,12 @@ void test_sha256_digest_truncated() {
     CryptoHandler handler(EVP_sha256());
 
     ByteArray message = {'a', 'b', 'c'};
-
+    ByteArray expected_digest("ba7816bf8f01cfea414140de5dae2223");
     // Truncate to 128 bits (16 bytes)
     auto truncated = handler.calculate_digest_truncated(message, 128);
     assert(truncated.has_value());
     assert(truncated.value().size() == 16);
+    assert(truncated.value() == expected_digest);
 
     // Cleanup
     message.secure_wipe();

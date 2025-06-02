@@ -206,7 +206,7 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::encrypt(
     }
 
     //resize array to actual encrypted size and return that size
-    ciphertext_bytes.resize(encrypted_length);
+    ciphertext_bytes.resize(encrypted_length,true,false);
 
     return ciphertext_bytes;
 
@@ -287,7 +287,7 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::decrypt(
     }
 
     // Resize plaintext to actual decrypted length
-    plaintext_bytes.resize(decrypted_length);
+    plaintext_bytes.resize(decrypted_length,true,false);
 
     return plaintext_bytes;
 }
@@ -417,7 +417,7 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::calculate_digest_tru
     if (digest_res)
     {
         if ((show_bits/8) < digest_res.value().size()) {
-            digest_res.value().resize(show_bits/8);
+            digest_res.value().resize(show_bits/8,true,false);
         }else
         {
             return std::unexpected(CryptoHandlerError::with_msg("requested more bytes than digest provides"));
@@ -455,9 +455,8 @@ std::expected<ByteArray, CryptoHandlerError> CryptoHandler::calculate_cbc_mac(co
 ByteArray CryptoHandler::calculate_hmac(const ByteArray& message, const ByteArray& key)
 {
     expect_digest_mode_handler();
-    ByteArray hmac_out(32,0x00);
+    ByteArray hmac_out(EVP_MAX_MD_SIZE,0x00);
 
-    hmac_out.resize(EVP_MAX_MD_SIZE);
     unsigned int digest_length = 0;
 
     if (nullptr == HMAC(m_digest,const_cast<ByteArray&>(key).data(),
@@ -471,7 +470,7 @@ ByteArray CryptoHandler::calculate_hmac(const ByteArray& message, const ByteArra
     }
 
 
-    hmac_out.resize(digest_length);
+    hmac_out.resize(digest_length,true,false);
 
     return hmac_out;
 
